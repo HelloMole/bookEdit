@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "绘本编辑器文档"
   text: "技术文档"
-  tagline: My great project tagline
+  tagline: 基于CocosCreator的网页编辑器
   actions:
     - theme: brand
       text: 快速开始

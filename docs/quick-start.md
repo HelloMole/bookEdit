@@ -5,7 +5,7 @@ outline: deep
 # 快速部署
 此篇内容仅针对需要二次开发部署的程序员，如果你只需要学习如何使用此工具，请前往[快速上手](./quick-use)
 
-首先前往[Github](https://vitepress.dev/reference/runtime-api#usedata)克隆此项目到本地。
+首先前往[Github](https://github.com/HelloMole/bookEdit)克隆此项目到本地。
 
 此项目基于[Vue3](https://vuejs.org)构建，如果需要扩展开发，请参考Vue开发文档。
 
