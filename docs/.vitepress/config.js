@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "绘本编辑器文档",
   description: "技术文档",
+  base: '/BookEditDoc/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     search: {
