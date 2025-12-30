@@ -1326,6 +1326,7 @@ export default {
             this.systemSetting[i].value = config[this.systemSetting[i].key]
           }
         }
+        CocosMgr.setRootHost(config.cloudHost)
         // console.log('bookEditConfig', config, this.systemSetting)
         ossClient = new OSS.default({
             region: 'oss-cn-shanghai',

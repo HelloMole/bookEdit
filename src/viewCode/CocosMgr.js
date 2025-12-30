@@ -22,6 +22,10 @@ export function changeRunInmportState(state){
     isInImport = state
 }
 
+export function setRootHost(url){
+    rootHost = url
+}
+
 export function changeIsSinglePreview(state){
     isSinglePreview = state
 }
