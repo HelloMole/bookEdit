@@ -27,7 +27,7 @@ import { VueDraggable } from 'vue-draggable-plus'
 import CurverEChart from './components/CurverEChart.vue'; // 确保路径正确
 import TopFreeDrag from './components/TopFreeDrag.vue'; // 确保路径正确
 
-import * as schedule from 'node-schedule';
+// import * as schedule from 'node-schedule';
 // import ElementPlus from 'element-plus'
 // import 'element-plus/dist/index.css'
 import { notification } from 'ant-design-vue';

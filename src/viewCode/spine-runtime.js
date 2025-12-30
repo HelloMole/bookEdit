@@ -27,7 +27,7 @@ export const SpineRuntime = {
         }
         var key = version + '_' + mode
         if (cache[key] == null) {
-            const libPath = `../spine-runtimes/${version}/spine-${mode}.js`;
+            const libPath = `../assets/spine-runtimes/${version}/spine-${mode}.js`;
             // console.log('加载的路径', libPath)
             var {spine} = await import(libPath)
             cache[key] = spine
