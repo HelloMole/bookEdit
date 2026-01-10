@@ -11,7 +11,7 @@ const soundFxs = ['无','popOut.mp3']
 class createObject extends BaseYWNode {
     // Name to show
     title = "物体"
-    desc = "在界面中创建一个物体";   //不会在显示节点中用到，仅仅在代码中的解释
+    desc = "在界面中创建一个物体，重要：此物体节点包含一个类型为codeNode的特殊输出接口，应当与相关有接受codeNode输入接口的节点连接，如果没有连接，需要关联codeNode输入的节点无法将产生无法响应触摸事件，或者获取实体对象等情况。";   //不会在显示节点中用到，仅仅在代码中的解释
     // color= '#510'
     
 
@@ -26,8 +26,9 @@ class createObject extends BaseYWNode {
         // this.addProperty("scale", 0, 'number');   //增加一个变量，    变量名称， 变量名称
         // this.addWidget("number","缩放倍数", this.properties.scale ,"scale", {precision: 1});  //增加一个控件用于修改变量，  类型，显示名称，默认值，要修改的变量的名称)
 
-        this.addInput("创建", LiteGraph.ACTION);
+        // this.addInput("创建", LiteGraph.ACTION);
         // this.addInput("触发", LiteGraph.ACTION);
+        // this.widgets_up = true;
 
         this.addOutput("物体", 'codeNode')
 
@@ -136,6 +137,10 @@ class createObject extends BaseYWNode {
         // this.properties.precision = 1
         // console.log('节点构建完毕')
     }
+
+    // onDblClick(){
+    //     // console.log('双击了createObject节点', this.properties.customeName)
+    // }
 
     getExtraMenuOptions(graphcanvas) {
         // var that = this;

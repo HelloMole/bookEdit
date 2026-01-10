@@ -83,14 +83,16 @@
                 <a-button type="primary">新建绘本</a-button>
               </a-popconfirm>
               <!-- <a-button type="primary"  v-on:click="onBtnCreateModel(null, this.newProjectName)">新建绘本</a-button> -->
-              <!-- <a-button type="primary" v-if="currentSelectMenu[0] == 1" @click="onBtnImportOldVersion">
+              <a-button type="primary" v-if="currentSelectMenu[0] == 1" @click="onBtnImportOldVersion">
                 导入旧版绘本
-              </a-button> -->
-              <!-- <a-button type="primary" v-if="currentSelectMenu[0] == 1">
+                <!-- <input type="file" @change="onBtnImportOldVersion" ref="modelImport" accept=".txt,.json" -->
+                <!-- style="opacity:0; font-size: 30px; width: 100%; position: absolute;  top: 0; left: 0"> -->
+              </a-button>
+              <a-button type="primary" v-if="currentSelectMenu[0] == 1">
                 导入绘本配置
                 <input type="file" @change="onBtnImportExcelConfig" ref="modelImport" accept=".xlsx"
                 style="opacity:0; font-size: 30px; width: 100%; position: absolute;  top: 0; left: 0">
-              </a-button> -->
+              </a-button>
               <!-- <div style="margin-left: 30px;">筛选：</div> -->
               <!-- <ConfigInput :values="searchConfig" :vertical="false" marginLeft="100px" @onChange="onsearchConfigChange"/> -->
               <div style="flex-grow: 1;"></div>
@@ -497,7 +499,7 @@
                  </a-flex>
               </template>
               <div :style="{width: canvasWidth + 'px', height: canvasHeight + 'px'}" style="position:relative;"  @drop.prevent="handleDrop">
-                <canvas v-show="ruleChooseTabOption == '蓝图'" id='mycanvas' :width="canvasWidth" :height="canvasHeight"></canvas>
+                <canvas v-show="ruleChooseTabOption == '蓝图'" id='mycanvas' :width="canvasWidth" :height="canvasHeight" @litegraph:canvas="onLiteGraphCanvas"></canvas>
                 <VueDraggable v-show="ruleChooseTabOption == '表格'" v-model="curEditLgraphTable" target=".ant-table-tbody"  draggable=".ant-table-row" :sort="true" :animation="150" @end="onLgraphTableDragEnd">
                   <!--暂时用不到选择功能 :row-selection="{selectedRowKeys: graphTableSelectRows, onChange: onSelectChange}" -->
                   <a-table :columns="graphTableColumns"  :data-source="curEditLgraphTable" size="small" :bordered="true" :pagination="false" rowKey="id"  :scroll="{ x: canvasWidth - 80, y: canvasHeight - 40  }" @resizeColumn="handleResizeTableColumn">
@@ -633,6 +635,14 @@
       </a-flex>
     </div> -->
   </div>
+  <a-tooltip placement="left">
+    <template #title>AI助手</template>
+    <a-float-button v-show="!showAiChatModal" @click="openAiChat"  type="primary"><template #icon><RobotOutlined /></template></a-float-button>
+  </a-tooltip>
+  
+  <!-- AI聊天卡片 -->
+  <AiChatCard ref="aiChatCardRef" :open="showAiChatModal" @close="closeAiChat" @send="handleAiChatSend" />
+  
   <a-modal v-model:open="importModelOpen" title="导入旧版绘本" @ok="handleOkImport">
       <ConfigInput :vertical="true" gap="3" :values="importOldVersionConfig" marginLeft="0px" @onChange="onImportOldVersionConfigChange"></ConfigInput>
       
@@ -739,7 +749,6 @@
 
 <script>
 import axios from 'axios'
-//import * as echarts from 'echarts';
 import { createTextVNode, nextTick,  ref, h } from 'vue';
 import 'dayjs/locale/zh-cn' ///修改日期选择器中的语言为中文
 import zhCN from 'ant-design-vue/es/locale/zh_CN';
@@ -750,24 +759,27 @@ import TreeCom from "../../components/RuleEditor/components/tree.vue";
 import DescCom from "../../components/RuleEditor/components/desc.vue";
 import MarkEdit from "../../components/MarkEdit.vue"
 import SoundTextEdit from "../../components/SoundTextEdit.vue"
+import AiChatCard from "../../components/AiChatCard.vue"
 
 import {fnData, functionDescription} from "../../components/RuleEditor/fnData.js"
 import { get, set, del } from 'idb-keyval';
-import { VueDraggable } from 'vue-draggable-plus'
+// import { VueDraggable } from 'vue-draggable-plus'
 import * as Rules from '../lianghua/Rules.js';
-import CryptoJS from 'crypto-js'
+// import { checkKey } from '@/ActiveTool.js';
+// import CryptoJS from 'crypto-js'
 import * as XLSX from 'xlsx';
 import { message, Modal, notification, Tag  } from 'ant-design-vue';
 import { useDraggable, useElementSize } from '@vueuse/core';
 import { UseElementSize } from '@vueuse/components';
 
-import { LoginOutlined,  LogoutOutlined, ApiOutlined, BuildOutlined, MacCommandOutlined, ToolOutlined, CloseCircleOutlined, CloseOutlined, ApiFilled } from '@ant-design/icons-vue';
+import { LoginOutlined,  LogoutOutlined, ApiOutlined, BuildOutlined, MacCommandOutlined, ToolOutlined, CloseCircleOutlined, CloseOutlined, ApiFilled, RobotOutlined, BulbOutlined } from '@ant-design/icons-vue';
 
 import { zhString } from '@/litegraph/zhString';
 import {LGraph, LiteGraph, LGraphCanvas, LGraphNode, createBounds} from '../../litegraph/litegraph'
 import * as CocosMgr from '../../viewCode/CocosMgr'
 import '../../viewCode/RegisterNodeType'
 import SparkMD5 from 'spark-md5';
+import { initializeAgent } from '@/openai/agentByThird.js';
 
 
 import * as OSS from 'ali-oss/dist/aliyun-oss-sdk';
@@ -782,6 +794,8 @@ import { sort } from '../../pinyin_getFirstLetterList.js';
 import VoiceCheck from '@/xfyun/VoiceCheck';
 
 const totpSecret = 'LNKFKRGPNZNUYSLX2VSDSQKJKZDTSRLD';
+
+
 
 //改成动态创建，不要写死
 var ossClient = null
@@ -874,6 +888,7 @@ export default {
     UseElementSize,
     MarkEdit,
     SoundTextEdit,
+    AiChatCard,
     // VerificationCode
     // VueDraggable
   },
@@ -1052,8 +1067,6 @@ export default {
       curEditTabDit: ref({}), //curEditRulesDit，resultSymbolList，curSelectSymbolItem，全都要放到这里
       curOpenLayout: ref([0, 1, 1, 1, 1]),
 
-      // resultSymbolList: ref([]),
-      // curSelectSymbolItem: ref({}),
       searchConfig: ref([
           {key: 'name', type: 'input', value: '',  title: '过滤名称'},
           {key: 'group', type: 'select', value: [], title: '过滤分组', mode: 'tags', width: '200px', maxTagCount: 3, options: bookGroup},
@@ -1087,7 +1100,6 @@ export default {
       ]),
 
       ruleChooseTabOption: '蓝图',
-  
       checkAllRule: false,
       checkIndeterminate: true,
       newPolicyName: '',
@@ -1139,8 +1151,6 @@ export default {
           {key: 'bookId',  type: 'input', value: '', title: '绘本编号', inBottom: true},
           // {key: 'bookName',  type: 'input', value: '', title: '绘本名称', inBottom: true},
           // {key: 'bookDes',  type: 'input', value: '', title: '绘本备注', inBottom: true},
-          // {key: 'bucket',  type: 'input', value: '', title: 'bucket', inBottom: true},
-          // {key: 'cloudHost',  type: 'input', value: '', title: 'cloudHost', inBottom: true},
       ]),
       createMotionTextConfig: ref([
           // {key: 'years', type: 'select', value: [], maxTagCount: 0, mode:'multiple', options: []},
@@ -1205,12 +1215,15 @@ export default {
           // {key: 'years', type: 'select', value: [], maxTagCount: 0, mode:'multiple', options: []},
           {key: 'accessKeyId',  type: 'input', value: '', width: '400px', title: 'accessKeyId', inBottom: true},
           {key: 'accessKeySecret',  type: 'input', value: '', title: 'accessKeySecret', inBottom: true},
-          {key: 'bucket',  type: 'input', value: '', title: 'bucket', inBottom: true},
-          {key: 'cloudHost',  type: 'input', value: '', title: 'cloudHost', inBottom: true},
+          {key: 'bucket',  type: 'input', value: 'animalcastle-app-resources', title: 'bucket', inBottom: true},
+          {key: 'cloudHost',  type: 'input', value: 'https://animalcastle-app-resources.oss-cn-shanghai.aliyuncs.com', title: 'cloudHost', inBottom: true},
           
-          {key: 'xunfeiAppid',  type: 'input', value: '', width: '400px', title: 'xunfeiAppid', inBottom: true},
-          {key: 'xunfeiApiSecret',  type: 'input', value: '', width: '400px', title: 'xunfeiApiSecret', inBottom: true},
-          {key: 'xunfeiApiKey',  type: 'input', value: '', width: '400px', title: 'xunfeiApiKey', inBottom: true},
+          {key: 'xunfeiAppid',  type: 'input', value: '145d2560', width: '400px', title: 'xunfeiAppid', inBottom: true},
+          {key: 'xunfeiApiSecret',  type: 'input', value: 'MTM3ZWQ2Y2Y4ZmEyMTEwYWVmMDg3NmRk', width: '400px', title: 'xunfeiApiSecret', inBottom: true},
+          {key: 'xunfeiApiKey',  type: 'input', value: '4c75d2411acf143f4145ba8b72a03bdc', width: '400px', title: 'xunfeiApiKey', inBottom: true},
+
+          {key: 'OpenAibaseURL',  type: 'input', value: 'https://api.gptsapi.net/v1', width: '400px', title: 'OpenAibaseURL', inBottom: true},
+          {key: 'OpenAiapiKey',  type: 'input', value: 'sk-hlKc1190aba25b66617fa0d7b631f42dedb70ffc2f2FghUc', width: '400px', title: 'OpenAiapiKey', inBottom: true},
       ]),
 
       copyedNode: {},
@@ -1225,6 +1238,7 @@ export default {
       showKeyboard: true,
       justCurrentPage: true, //查看所有页面的资源还是仅当前编辑的页面
       curShowAssestBoxType: '', //当前资源面板显示的资源类型
+      showAiChatModal: false
     };
   },
   watch:{
@@ -1310,7 +1324,7 @@ export default {
     // window.channel.onmessage = (event) => {
     //     console.log('收到消息:', event.data);
     // };
-  
+    
 
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
@@ -1326,7 +1340,10 @@ export default {
             this.systemSetting[i].value = config[this.systemSetting[i].key]
           }
         }
+        //初始化基础配置
         CocosMgr.setRootHost(config.cloudHost + '/bookEdit')
+        VoiceCheck.setConfig(config['xunfeiAppid'], config['xunfeiApiSecret'], config['xunfeiApiKey'])
+        initializeAgent(config['OpenAibaseURL'], config['OpenAiapiKey'])
         // console.log('bookEditConfig', config, this.systemSetting)
         ossClient = new OSS.default({
             region: 'oss-cn-shanghai',
@@ -1338,8 +1355,7 @@ export default {
           prefix: 'bookEditProject/',
           delimiter: '/'
         });
-        //如果配置了额外的语音配置
-        VoiceCheck.setConfig(config['xunfeiAppid'], config['xunfeiApiSecret'], config['xunfeiApiKey'])
+     
         console.log('云端文件列表',result.objects);
       } catch (error) {
         console.log('初始化云储存失败', error)
@@ -1381,6 +1397,17 @@ export default {
       this.$message.warn(msg)
     }
 
+    // 为 AI Agent 提供获取当前编辑蓝图的方法
+    window.getCurrentEditGraph = () => {
+      return this.getCurEditLGraph()
+    }
+
+    // 为 AI Agent 提供刷新画布的方法
+    window.refreshLiteGraphCanvas = () => {
+      if(this.lgcanvas != null && this.lgcanvas.graph != null){
+        this.lgcanvas.draw(true, true)
+      }
+    }
 
     if (window.require) {
 
@@ -1411,7 +1438,7 @@ export default {
       children: [
         {key: 'viewToCenter', label: '重置界面中心点', has_submenu: false},
         {key: 'autoSetAni', label: '自动设置动画', has_submenu: false},
-        // {key: 'autoSetOldData', label: '适配导入旧版数据', has_submenu: false},
+        {key: 'autoSetOldData', label: '适配导入旧版数据', has_submenu: false},
         {key: 'layoutNodes', label: '扩散节点', has_submenu: false},   //导入后的节点位置乱了，需要重新设置
         {key: 'layoutNodesJustX', label: '向右扩散节点', has_submenu: false},   //导入后的节点位置乱了，需要重新设置
         {key: 'girdNodes', label: '优化节点排列', has_submenu: false}, //导入后的节点位置乱了，需要重新设置
@@ -3914,7 +3941,6 @@ export default {
     },
 
 
-
     //lgCanvas只有一个，需要持久化保存
     initLgraphCanvas(graph){
       
@@ -6124,7 +6150,47 @@ export default {
     handleReset(clearFilters){
       clearFilters({ confirm: true });
       // state.searchText = '';
+    },
+
+    //打开Ai助理
+    openAiChat(){
+      this.showAiChatModal = true
+    },
+
+    //关闭Ai助理
+    closeAiChat(){
+      this.showAiChatModal = false
+    },
+
+    //处理AI聊天发送消息
+    handleAiChatSend(message){
+      // TODO: 实现发送消息逻辑
+      console.log('发送消息:', message)
+    },
+
+    //监听蓝图事件
+    onLiteGraphCanvas(event){
+      console.log('onLiteGraphCanvas', event)
+      if(event.detail.subType == 'node-double-click'){
+        let node = event.detail.node
+        // 获取 node id 和 type
+        const nodeId = node.id
+        const nodeType = node.type || node.constructor.type || 'unknown'
+        
+        // 确保 AI 聊天卡片打开
+        if (!this.showAiChatModal) {
+          this.showAiChatModal = true
+        }
+        
+        // 将 node 信息发送到 AiChatCard 组件
+        this.$nextTick(() => {
+          if (this.$refs.aiChatCardRef) {
+            this.$refs.aiChatCardRef.addNodeTag(nodeId, nodeType)
+          }
+        })
+      }
     }
+
   }
 }
 </script>
@@ -6222,6 +6288,7 @@ export default {
 .ant-menu-vertical{
   user-select: none;
 }
+
 
 
 

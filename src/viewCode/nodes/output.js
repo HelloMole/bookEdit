@@ -20,9 +20,13 @@ class showTextTip extends LGraphNode {
     //   this.addInput("B", "number")
         // this.addOutput("bool", "boolean")   //增加一个输出触点，  输出节点的名称， 值类型
         this.addProperty("msg", "");   //增加一个变量，    变量名称， 变量名称
-        this.addInput("", LiteGraph.EVENT);
-        this.widget = this.addWidget("text", "Text", "", "msg");
-        this.widgets_up = true;
+        let inputSolt = this.addInput("msg", 0);
+        this.widget = this.addWidget("text", "内容", "", "msg");
+        inputSolt.widget = this.widget; // 让输入槽和widget共享同一个值
+
+        this.addInput("显示", LiteGraph.EVENT);
+
+        // this.widgets_up = true;
         this.size = [200, 30];
 
 
@@ -61,9 +65,9 @@ class showTextTip extends LGraphNode {
     // };
 
     //暂不清楚用处
-    setValue(v){
-		this.setProperty("value",v);
-	}
+    // setValue(v){
+	// 	this.setProperty("value",v);
+	// }
     
     // 获取可以接受的输入
     // onGetInputs() {
@@ -77,7 +81,7 @@ class showTextTip extends LGraphNode {
     // 当节点Toggle时调用
     onAction(action, param)
 	{
-        var msg = this.properties.msg;
+        var msg = this.getInputOrProperty('msg') //this.properties.msg;
         CocosMgr.showAlert(msg);
         //暂时调用网页提醒
         //提供接入cocos的提示，或者是ant的消息提示
@@ -121,9 +125,11 @@ class showConfirm extends LGraphNode {
         // this.addInput("触发", "number")   //增加一个输入触点，  输入触点的名称， 值类型
     //   this.addInput("B", "number")
         // this.addOutput("bool", "boolean")   //增加一个输出触点，  输出节点的名称， 值类型
+        let inputSolt = this.addInput("msg", 0);
         this.addProperty("msg", "");   //增加一个变量，    变量名称， 变量名称
-        this.addInput("", LiteGraph.EVENT);
+        this.addInput("显示", LiteGraph.EVENT);
         this.widget = this.addWidget("text", "Text", "", "msg");
+        inputSolt.widget = this.widget; // 让输入槽和widget共享同一个值
         // this.widgets_up = true;
         // this.size = [200, 30];
 
@@ -181,7 +187,7 @@ class showConfirm extends LGraphNode {
     // 当节点Toggle时调用
     onAction(action, param)
 	{
-        var msg = this.properties.msg;
+        var msg = this.getInputOrProperty('msg');
         CocosMgr.showConfirm(msg, (result)=>{
              if(result == true){
                 this.trigger('确认')
@@ -839,9 +845,9 @@ class consoleInfo extends LGraphNode {
     // };
 
     //暂不清楚用处
-    setValue(v){
-		this.setProperty("value",v);
-	}
+    // setValue(v){
+	// 	this.setProperty("value",v);
+	// }
     
     // 获取可以接受的输入
     onGetInputs() {
